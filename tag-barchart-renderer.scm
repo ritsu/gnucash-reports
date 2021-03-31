@@ -346,8 +346,8 @@
       (/ (gnc:gnc-monetary-amount a)
          (gnc:gnc-monetary-amount b)))
 
-    ;; Tags: n-digit precision floor of a float
-    ;; (f-floor 5.678 2) -> 5.68
+    ;; Tags: n-digit precision rounding of a float
+    ;; (f-round 5.678 2) -> 5.68
     (define (f-round f n)
       (let ((p (expt 10 n)))
         (/ (round (* p f)) p)))
