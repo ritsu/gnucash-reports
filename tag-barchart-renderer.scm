@@ -705,27 +705,50 @@
 
              ;; Tags: Normalize to 100% total for each period
              (when normalize?
-               (let ((total-sum (map
-                                  (lambda (l) (apply gnc:monetary+ l))
-                                  (apply zip (map cadr grouped-data)))))
-                 (set! grouped-data-totals (list "Total" total-sum)))
+               (let*
+                 ((zipped-data
+                    (apply zip
+                      (map (lambda (d) (append (list (car d)) (cadr d)))
+                           grouped-data)))
+                  (norm-data
+                    (cons
+                      (car zipped-data)
+                      (map (lambda (dms)
+                        (let* ((tm (apply gnc:monetary+ dms))
+                               ;; Hash map so we can recover original order after sorting
+                               (index 0)
+                               (nmap (map
+                                   (lambda (dm)
+                                     (set! index (+ 1 index))
+                                     (if (zero? (gnc:gnc-monetary-amount tm))
+                                       (list index 0)
+                                       (list index (f-round (* 100 (gnc:monetary/ dm tm)) 2))))
+                                   dms))
+                               ;; Set max < 100 to avoid y-axis overflow from rounding
+                               (norm-diff (- 99.99999 (apply + (map cadr nmap)))))
+                          (if (zero? norm-diff)
+                            (map cadr nmap)
+                            ;; Add rounding error diff to largest element in nmap
+                            (let*
+                              ((nmap-sorted
+                                 (sort
+                                   nmap
+                                   (lambda (a b) (> (cadr a) (cadr b)))))
+                               (nmap-fixed
+                                 (cons
+                                   (list (car (car nmap-sorted))
+                                         (+ norm-diff (cadr (car nmap-sorted))))
+                                   (cdr nmap-sorted))))
+                              ; (map cadr nmap-fixed)))))
+                              (map cadr
+                                   (sort
+                                     nmap-fixed
+                                     (lambda (a b) (< (car a) (car b)))))))))
+                        (cdr zipped-data)))))
+                  (set! grouped-data (map (lambda (d) (list (car d) (cdr d)))
+                       (apply zip norm-data)))))
 
-               (for-each (lambda (d)
-                 (let ((norm-data (map (lambda (dm tm) 
-                                         (if (= 0 (gnc:gnc-monetary-amount tm)) 
-                                           0
-                                           (f-round (* 100 (gnc:monetary/ dm tm)) 2)))
-                                         (cadr d)
-                                         (cadr grouped-data-totals))))
-                   (set! grouped-data-normalized
-                     (append grouped-data-normalized
-                           (list (list (car d) norm-data)))))) 
-                 grouped-data)
-
-               (set! grouped-data grouped-data-normalized))
-
-
-             ;; Tags: Replaced all-data with grouped-data in this (for-each) block 
+             ;; Tags: Replaced all-data with grouped-data in this (for-each) block
              ;;       See iterable arguments to (lambda ())
              (for-each
               (lambda (series color stack)
