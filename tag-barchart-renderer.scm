@@ -6,10 +6,10 @@
 ;;     pairs, for example:
 ;;       type: equity, cap: small, style: value, dom: us
 ;;       type: equity, cap: large, style: growth, dom: intl
-;;   - Each generated report is associated with a tag-key, and 
+;;   - Each generated report is associated with a tag-key, and
 ;;     balances are grouped by tag-values.
 ;;   - The following options have been added to the Tag tab:
-;;       Group by (multi-choice): 
+;;       Group by (multi-choice):
 ;;         Choose from tag keys found in existing account notes
 ;;       Use parent tags as fallback (boolean):
 ;;         If an account does not have the group-by tag defined
@@ -25,15 +25,13 @@
 ;;
 ;; Note:
 ;;   - If an account has multiple values for the same tag,
-;;     the current behaviour is to count the balance for the 
+;;     the current behaviour is to count the balance for the
 ;;     account multiple times, once for each tag value.
-;;   - Consdering changing the above behaviour so accounts 
+;;   - Consdering changing the above behaviour so accounts
 ;;     are only counted once. Q: For first tag value seen,
 ;;     or first tag value alphabetically?
 ;;
 ;; TODO:
-;;   - Fix: y-axis for normalized chart goes over 100 when
-;;     an account has multiple values for reported tag.
 ;;   - Refactor: There are probably a lot of unnecessary
 ;;     loops and data structures that can be trimmed down.
 ;;   - Additional TODO items in code comments
@@ -41,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-module (gnucash report tag-barchart-renderer))
- 
+
 ;; Are these necessary?
 (use-modules (gnucash gnc-module))
 (use-modules (gnucash gettext))
@@ -94,10 +92,10 @@
 ;;       "key1: value1, key2: value2" -> ((key1 value1) (key2 value2))
 ;; Note: This is used in both options and renderer
 (define (account->tag-pairs acct)
-  (let ((tag-strings 
+  (let ((tag-strings
           (filter (lambda (s) (memq #\: (string->list s)))
                   (string-split (xaccAccountGetNotes acct) #\,))))
-    (map (lambda (s) 
+    (map (lambda (s)
            (map (lambda (ss)
                   (string-trim-right (string-trim ss)))
              (string-split s #\:)))
@@ -121,10 +119,10 @@
         account-list)
       (delete-duplicates res)))
 
-  (let* ((options (gnc:new-options)) 
+  (let* ((options (gnc:new-options))
     ;; This is just a helper function for making options.
     ;; See libgnucash/app-utils/options.scm for details.
-    (add-option 
+    (add-option
      (lambda (new-option)
       (gnc:register-option options new-option))))
 
@@ -175,7 +173,7 @@
        (gnc:make-multichoice-option
         pagename-tags optname-group-by
         "a" (N_ "Group amounts by this tag type") (string->symbol (car tag-keys))
-        (map 
+        (map
           (lambda (tag-key)
             (vector
               (string->symbol tag-key)
@@ -272,10 +270,10 @@
 
     (gnc:options-set-default-section options gnc:pagename-general)
     options))
- 
+
 ; report renderer (called by loader after it reloads this module)
 (define (tag-barchart-renderer report-obj reportname reportguid
-                               account-types do-intervals? 
+                               account-types do-intervals?
                                reverse-bal? export-type)
   ;; A helper functions for looking up option values.
   (define (get-option section name)
@@ -565,7 +563,7 @@
                 all-data)
               (delete-duplicates res)))
 
-          ;; Tags: Create list of balances for each unique tag-value in all-data 
+          ;; Tags: Create list of balances for each unique tag-value in all-data
           (define (group-by-tag-value all-data)
             (let ((res '()))
               (for-each (lambda (v)
@@ -850,18 +848,18 @@
                    table "th"
                    'attribute '("align" "left"))
                  (gnc:html-table-set-col-headers! table groups)
-                 (gnc:html-table-append-row! table 
+                 (gnc:html-table-append-row! table
                    (map (lambda (group)
-                       (apply 
+                       (apply
                          string-append
                          (sort (delete-duplicates
                              (map (lambda (ga)
-                                 (string-append 
+                                 (string-append
                                    (if show-fullname?
                                      (gnc-account-get-full-name (cadr ga))
                                      (xaccAccountGetName (cadr ga)))
                                    "<br/>"))
-                                  (filter 
+                                  (filter
                                     (lambda (g) (equal? (car g) group))
                                     grouped-accounts)))
                              (lambda (a b)
