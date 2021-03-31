@@ -35,7 +35,7 @@ accounts.
 accounts. 
 
 ## Examples
-Suppose you have the following account tree.
+Suppose you have the following account tree. (The numbers and accounts here are all made up.)
 
 ![list-of-accounts](https://user-images.githubusercontent.com/490097/113089879-8e281900-91b6-11eb-8956-f84a9bb867db.png)
 
@@ -45,7 +45,7 @@ You can use tag-barchart to create a report for the different types of cash acco
 <img src="https://user-images.githubusercontent.com/490097/113091034-13acc880-91b9-11eb-834e-41c07a82d233.png" width="700" />
 
 Another feature of tag-barchart is the option to display balances as percentages of the total balance for each 
-period. This makes it easy to see trends among tag groups over time. 
+period. This makes it easy to see trends among tag groups over time. The options refer to this as *Normalized Balances*.
 
 <img src="https://user-images.githubusercontent.com/490097/113091646-60dd6a00-91ba-11eb-9d98-ae3f45d5c205.png" width="500" /> <img src="https://user-images.githubusercontent.com/490097/113091655-65098780-91ba-11eb-890a-b3c8a328e079.png" width="500" />
 
@@ -63,7 +63,7 @@ by adding the line:
 * Restart GnuCash. There should now be reports called **Tagged ___ Report** under *Assets & Liabilities* and *Income & Expenses*.
 
 ## Notes
-The report options window includes a tab for Tag-related options. The **Group by** option allows the user to choose
+The report options window includes a tab for tag-related options. The **Group by** option allows the user to choose
 which tag-key to use to group accounts. Available tag-keys are parsed from *existing account notes*. If there are no 
 valid tags found in any account notes, no tag groups will be created, and the report will simply show the total for all 
 selected accounts. 
