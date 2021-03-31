@@ -35,7 +35,7 @@ accounts.
 accounts. 
 
 ## Examples
-Suppose you have the following account tree. (The numbers and accounts here are all made up.)
+Suppose you have the following account tree. (The numbers and accounts here are fictional.)
 
 ![list-of-accounts](https://user-images.githubusercontent.com/490097/113089879-8e281900-91b6-11eb-8956-f84a9bb867db.png)
 
@@ -53,7 +53,7 @@ period. This makes it easy to see trends among tag groups over time. The options
 
 ## Installation
 * Create a new directory in <a href="https://wiki.gnucash.org/wiki/Configuration_Locations#USER_DATA_HOME">USER_DATA_HOME</a>. 
-Here, I am using `/ritsu-reports`, but you can call it anything you want.
+Here, I am using `/ritsu-reports`, but it can be anything.
 * Copy both `tag-barchart-loader.scm` and `tag-barchart-renderer.scm` to `/ritsu-reports`.
 * Create / edit the file `config-user.scm` in <a href="https://wiki.gnucash.org/wiki/Configuration_Locations#USER_DATA_HOME">USER_DATA_HOME</a> 
 by adding the line:
@@ -71,7 +71,8 @@ selected accounts.
 To refresh newly added tags (account notes) ***in the options window***, the entire report needs to be closed and 
 reopened. (That is, until someone can figure out a way to refresh the options window without reopening the report.)
 
-
+Two separate files are used to load and render the report to facilitate development. They can be combined into a single 
+file if you are comfortable working with Scheme. It may improve load times when reloading the report. 
 
 ## License
 <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GNU GPL</a>
