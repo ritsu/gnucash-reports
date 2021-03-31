@@ -348,6 +348,12 @@
       (/ (gnc:gnc-monetary-amount a)
          (gnc:gnc-monetary-amount b)))
 
+    ;; Tags: n-digit precision floor of a float
+    ;; (f-floor 5.678 2) -> 5.68
+    (define (f-round f n)
+      (let ((p (expt 10 n)))
+        (/ (round (* p f)) p)))
+
     ;; (gnc:debug accounts)
     (if (not (null? accounts))
 
@@ -710,7 +716,7 @@
                  (let ((norm-data (map (lambda (dm tm) 
                                          (if (= 0 (gnc:gnc-monetary-amount tm)) 
                                            0
-                                           (* 100 (gnc:monetary/ dm tm))))
+                                           (f-round (* 100 (gnc:monetary/ dm tm)) 2)))
                                          (cadr d)
                                          (cadr grouped-data-totals))))
                    (set! grouped-data-normalized
