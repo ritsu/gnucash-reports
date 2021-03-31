@@ -1,5 +1,5 @@
 # tag-barchart
-A custom GnuCash barchart report that groups accounts based on tags. 
+A custom <a href="https://www.gnucash.org/">GnuCash</a> barchart report that groups accounts based on tags. 
 
 While this has been tested on my own system and 
 appears to be working fine, accuracy of the reports is not guaranteed, and there may be bugs. *I am not a Scheme 
