@@ -40,11 +40,6 @@
 
 (define-module (gnucash report tag-barchart-renderer))
 
-;; Are these necessary?
-(use-modules (gnucash gnc-module))
-(use-modules (gnucash gettext))
-(gnc:module-load "gnucash/report/report-system" 0)
-
 (use-modules (srfi srfi-1))
 (use-modules (srfi srfi-9))
 (use-modules (srfi srfi-26))
