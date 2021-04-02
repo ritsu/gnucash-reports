@@ -35,7 +35,7 @@ accounts.
 accounts. 
 
 ## Examples
-Suppose you have the following account tree. (The numbers and accounts here are fictional.)
+Suppose you have the following account tree (numbers and accounts are fictional):
 
 ![list-of-accounts](https://user-images.githubusercontent.com/490097/113089879-8e281900-91b6-11eb-8956-f84a9bb867db.png)
 
@@ -56,8 +56,9 @@ period. This makes it easy to see trends among tag groups over time. The options
 Here, I am using `/ritsu-reports`, but it can be anything.
 * Copy both `tag-barchart-loader.scm` and `tag-barchart-renderer.scm` to `/ritsu-reports`.
 * Create / edit the file `config-user.scm` in <a href="https://wiki.gnucash.org/wiki/Configuration_Locations#USER_DATA_HOME">USER_DATA_HOME</a> 
-by adding the line:
+by adding the following lines:
   ```
+  (load (gnc-build-userdata-path "ritsu-reports/tag-barchart-renderer.scm"))
   (load (gnc-build-userdata-path "ritsu-reports/tag-barchart-loader.scm"))
   ```
 * Restart GnuCash. There should now be reports called **Tagged ___ Report** under *Assets & Liabilities* and *Income & Expenses*.
