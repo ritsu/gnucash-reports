@@ -78,6 +78,7 @@
 ;; Tags: Tag options names
 (define pagename-tags (N_ "Tags"))
 (define optname-group-by (N_ "Group by"))
+(define optname-custom-sort (N_ "Custom sort"))
 (define optname-use-parent (N_ "Use parent tags as fallback"))
 (define optname-display-untagged (N_ "Display untagged balances"))
 (define optname-normalize (N_ "Normalize balances for each interval"))
@@ -177,24 +178,29 @@
           tag-keys))))
 
     (add-option
+     (gnc:make-string-option
+      pagename-tags optname-custom-sort
+      "b" (N_ "Sort according to a list of tag values") (N_ "Value1, Value2, Value3")))
+
+    (add-option
      (gnc:make-simple-boolean-option
       pagename-tags optname-use-parent
-      "b" (N_ "User nearest parent tag if tag does not exist for an account") #t))
+      "c" (N_ "User nearest parent tag if tag does not exist for an account") #t))
 
     (add-option
      (gnc:make-simple-boolean-option
       pagename-tags optname-display-untagged
-      "c" (N_ "Display balances for untagged accounts") #t))
+      "d" (N_ "Display balances for untagged accounts") #t))
 
     (add-option
      (gnc:make-simple-boolean-option
       pagename-tags optname-normalize
-      "d" (N_ "Normalize balances to 100% over each period") #f))
+      "e" (N_ "Normalize balances to 100% over each period") #f))
 
     (add-option
      (gnc:make-simple-boolean-option
       pagename-tags optname-show-accounts
-      "e" (N_ "Display table of accounts listed by tag value") #f))
+      "f" (N_ "Display table of accounts listed by tag value") #f))
 
     ;; Accounts tab
     (add-option
@@ -258,10 +264,21 @@
      options gnc:pagename-display
      optname-plot-width optname-plot-height "f" (cons 'percent 100.0) (cons 'percent 100.0))
 
-    ;; Tags: TODO: Remove acct-code from list of options
-    (gnc:options-add-sort-method!
-     options gnc:pagename-display
-     optname-sort-method "g" 'amount)
+    ;; Tags: Add custom sort option
+    (add-option
+     (gnc:make-multichoice-option
+      gnc:pagename-display optname-sort-method
+      "g" "Choose the method for sorting accounts."
+      'amount
+      (list (vector 'alphabetical
+                    (N_ "Alphabetical")
+                    (N_ "Alphabetical by account name."))
+            (vector 'amount
+                    (N_ "Amount")
+                    (N_ "By amount, largest to smallest."))
+            (vector 'custom
+                    (N_ "Custom")
+                    (N_ "By custom order defined in tag options.")))))
 
     (gnc:options-set-default-section options gnc:pagename-general)
     options))
@@ -312,6 +329,7 @@
          (sort-method (get-option gnc:pagename-display optname-sort-method))
 
          (group-by (get-option pagename-tags optname-group-by))
+         (custom-sort (get-option pagename-tags optname-custom-sort))
          (use-parent? (get-option pagename-tags optname-use-parent))
          (display-untagged? (get-option pagename-tags optname-display-untagged))
          (normalize? (get-option pagename-tags optname-normalize))
@@ -607,7 +625,8 @@
                                            (gnc-account-get-full-name (car b)))
                       (gnc:string-locale<? (xaccAccountGetName (car a))
                                            (xaccAccountGetName (car b))))))
-               ((acct-code)
+               ;; Tags: replace acct-code with custom
+               ((custom)
                 (lambda (a b)
                   (gnc:string-locale<? (xaccAccountGetCode (car a))
                                        (xaccAccountGetCode (car b)))))
@@ -625,11 +644,27 @@
                  (lambda (a b)
                    (gnc:string-locale<? (car a)
                                         (car b))))
-                ;; Tags: Need to account for acct-code case until we remove it from options
-                (else
+                ((amount)
                  (lambda (a b)
                    (> (gnc:gnc-monetary-amount (apply gnc:monetary+ (cadr a)))
-                      (gnc:gnc-monetary-amount (apply gnc:monetary+ (cadr b)))))))))
+                      (gnc:gnc-monetary-amount (apply gnc:monetary+ (cadr b))))))
+                ((custom)
+                 (lambda (a b)
+                   (let* ((index 0)
+                          (custom-sort-list
+                            (map (lambda (tag-value)
+                                   (set! index (+ 1 index))
+                                   (list index (string-trim-right (string-trim tag-value))))
+                                 (string-split custom-sort #\,)))
+                          (get-key (lambda (value)
+                                     (let ((res
+                                             (filter (lambda (kv) (equal? (cadr kv) value))
+                                                     custom-sort-list)))
+                                       (if (zero? (length res))
+                                         999
+                                         (car (car res)))))))
+                     (< (get-key (car a))
+                        (get-key (car b)))))))))
 
           ;; Proceed if the data is non-zeros
           ;; Tags: Replaced all-data with grouped-data
@@ -734,7 +769,6 @@
                                    (list (car (car nmap-sorted))
                                          (+ norm-diff (cadr (car nmap-sorted))))
                                    (cdr nmap-sorted))))
-                              ; (map cadr nmap-fixed)))))
                               (map cadr
                                    (sort
                                      nmap-fixed

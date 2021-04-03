@@ -63,17 +63,26 @@ by adding the following lines:
   ```
 * Restart GnuCash. There should now be reports called **Tagged ___ Report** under *Assets & Liabilities* and *Income & Expenses*.
 
-## Notes
-The report options window includes a tab for tag-related options. The **Group by** option allows the user to choose
-which tag-key to use to group accounts. Available tag-keys are parsed from *existing account notes*. If there are no 
-valid tags found in any account notes, no tag groups will be created, and the report will simply show the total for all 
-selected accounts. 
+## Options
+The report options window includes a tab for tag-related options. 
 
-To refresh newly added tags (account notes) ***in the options window***, the entire report needs to be closed and 
-reopened. (That is, until someone can figure out a way to refresh the options window without reopening the report.)
+* **Group by**: Choose the tag-key by which the report will group accounts. The list of tag-keys are pulled from
+*existing account notes*. If there are no tags found, the report will simply show the total for all selected accounts.
 
-Two separate files are used to load and render the report to facilitate development. They can be combined into a single 
-file if you are comfortable working with Scheme. It may improve load times when reloading the report. 
+*Note: To refresh newly added tags (account notes) in the options window, the entire report needs to be closed and reopened.*
+
+* **Custom sort**: Define a list of tag-values by which grouped balances will be sorted. *Sort Method* (in the Display
+tab) needs to be set to *Custom* for this to have any effect.
+
+* **Use parent tags as fallback**: If an account does not have the group-by tag in its account notes, the report
+will use the first valid tag found from its parent accounts.
+
+* **Display untagged balances**: When checked, the report will display the combined balance of all accounts for which
+valid tags cannot be found. When unchecked, those accounts will not be shown.
+
+* **Normalize balances for each interval**: Display values as percentages instead of monetary amounts.
+
+* **Display table of accounts by tag**: Show a table of all accounts and their tag values.
 
 ## License
 <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GNU GPL</a>
