@@ -738,7 +738,7 @@
                                    dms))
                                ;; Set max < 100 to avoid y-axis overflow from rounding
                                (norm-diff (- 99.99999 (apply + (map cadr nmap)))))
-                          (if (zero? norm-diff)
+                          (if (or (zero? norm-diff) (> norm-diff 1))
                             (map cadr nmap)
                             ;; Add rounding error diff to largest element in nmap
                             (let*
