@@ -67,9 +67,9 @@ by adding the following lines:
 The report options window includes a tab for tag-related options. 
 
 * **Group by**: Choose the tag-key by which the report will group accounts. The list of tag-keys are pulled from
-*existing account notes*. If there are no tags found, the report will simply show the total for all selected accounts.
+*existing account notes*. If no tags are found, the report will simply show the total for all selected accounts.
 
-*Note: To refresh newly added tags (account notes) in the options window, the entire report needs to be closed and reopened.*
+    *Note: To refresh newly added tags (account notes) in the options window, the entire report needs to be closed and reopened.*
 
 * **Custom sort**: Define a list of tag-values by which grouped balances will be sorted. *Sort Method* (in the Display
 tab) needs to be set to *Custom* for this to have any effect.
@@ -78,7 +78,7 @@ tab) needs to be set to *Custom* for this to have any effect.
 will use the first valid tag found from its parent accounts.
 
 * **Display untagged balances**: When checked, the report will display the combined balance of all accounts for which
-valid tags cannot be found. When unchecked, those accounts will not be shown.
+no valid tags could be found. When unchecked, those accounts will not be shown.
 
 * **Normalize balances for each interval**: Display values as percentages instead of monetary amounts.
 
