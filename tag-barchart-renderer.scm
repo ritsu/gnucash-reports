@@ -610,30 +610,12 @@
 
           (set! work-to-do (count-accounts 1 topl-accounts))
 
-          ;; Sort the account list according to the account code field.
+          ;; Tags: Skip sorting because we sort in (set! grouped-data ... )
           (set! all-data
-            (sort
-             (filter (lambda (l)
-                       (not (zero? (gnc:gnc-monetary-amount
-                                    (apply gnc:monetary+ (cadr l))))))
-                     (traverse-accounts 1 topl-accounts))
-             (case sort-method
-               ((alphabetical)
-                (lambda (a b)
-                  (if show-fullname?
-                      (gnc:string-locale<? (gnc-account-get-full-name (car a))
-                                           (gnc-account-get-full-name (car b)))
-                      (gnc:string-locale<? (xaccAccountGetName (car a))
-                                           (xaccAccountGetName (car b))))))
-               ;; Tags: replace acct-code with custom
-               ((custom)
-                (lambda (a b)
-                  (gnc:string-locale<? (xaccAccountGetCode (car a))
-                                       (xaccAccountGetCode (car b)))))
-               ((amount)
-                (lambda (a b)
-                  (> (gnc:gnc-monetary-amount (apply gnc:monetary+ (cadr a)))
-                     (gnc:gnc-monetary-amount (apply gnc:monetary+ (cadr b)))))))))
+            (filter (lambda (l)
+                      (not (zero? (gnc:gnc-monetary-amount
+                                   (apply gnc:monetary+ (cadr l))))))
+                    (traverse-accounts 1 topl-accounts)))
 
           ;; Tags: Create grouped-data, sorted by user option
           (set! grouped-data
