@@ -75,6 +75,14 @@
 (define optname-averaging (N_ "Show Average"))
 (define opthelp-averaging (N_ "Select whether the amounts should be shown over the full time period or rather as the average e.g. per month."))
 
+;; Tags: Additional chart display options names
+(define pagename-chart (N_ "Chart"))
+(define optname-markers (N_ "Line chart: Show data markers"))
+(define optname-fill (N_ "Line chart: Fill"))
+(define optname-tooltip-intersect (N_ "Tooltip intersect"))
+(define optname-tooltip-axis (N_ "Tooltip axis"))
+(define optname-tooltip-mode (N_ "Tooltip mode"))
+
 ;; Tags: Tag options names
 (define pagename-tags (N_ "Tags"))
 (define optname-group-by (N_ "Group by"))
@@ -155,6 +163,59 @@
                 (vector 'DayDelta
                         (N_ "Daily")
                         (N_ "Show the average daily amount during the reporting period."))))))
+
+    ;; Tags: Add tab for additional chart display options
+    (add-option
+     (gnc:make-simple-boolean-option
+      pagename-chart optname-markers
+      "a" (N_ "Display a mark for each data point.")
+      #t))
+
+    (add-option
+     (gnc:make-simple-boolean-option
+      pagename-chart optname-fill
+      "b" (N_ "Fill area under line charts.")
+      #f))
+
+    (add-option
+     (gnc:make-simple-boolean-option
+      pagename-chart optname-tooltip-intersect
+      "c" (N_ "Display tooltip only when hovering over marker.")
+      #t))
+
+    (add-option
+     (gnc:make-multichoice-option
+      pagename-chart optname-tooltip-axis
+      "d" (N_ "Tooltip axis") 'x
+      (list (vector 'x
+                    (N_ "x")
+                    (N_ "x-axis"))
+            (vector 'y
+                    (N_ "y")
+                    (N_ "y-axis"))
+            (vector 'xy
+                    (N_ "xy")
+                    (N_ "xy-axis")))))
+
+    (add-option
+     (gnc:make-multichoice-option
+      pagename-chart optname-tooltip-mode
+      "e" (N_ "Select which elements appear in tooltip.") 'point
+      (list (vector 'point
+                    (N_ "point")
+                    (N_ "All utems at intersect point"))
+            (vector 'nearest
+                    (N_ "nearest")
+                    (N_ "The item nearest to the point"))
+            (vector 'index
+                    (N_ "index")
+                    (N_ "The item at the same index, based on intersect"))
+            (vector 'x
+                    (N_ "x")
+                    (N_ "All items that would intersect based on x coordinate"))
+            (vector 'y
+                    (N_ "y")
+                    (N_ "All items that would intersect based on y coordinate")))))
 
     ;; Tags: Add tab for tag-related options
     (if (null? tag-keys)
@@ -318,6 +379,13 @@
          ;; Tags: Force account-levels to 'all
          ; (account-levels (get-option gnc:pagename-accounts optname-levels))
          (account-levels 'all)
+
+         ;; Tags: Chart options
+         (markers (if (get-option pagename-chart optname-markers) 3 0))
+         (fill (get-option pagename-chart optname-fill))
+         (tooltip-intersect (get-option pagename-chart optname-tooltip-intersect))
+         (tooltip-axis (get-option pagename-chart optname-tooltip-axis))
+         (tooltip-mode (get-option pagename-chart optname-tooltip-mode))
 
          (chart-type (get-option gnc:pagename-display optname-chart-type))
          (stacked? (get-option gnc:pagename-display optname-stacked))
@@ -777,7 +845,8 @@
                        (stack (if stacked?
                                   "default"
                                   (number->string stack)))
-                       (fill (eq? chart-type 'barchart))
+                       ;; Tags: This is an explicit user option now
+                       ; (fill (eq? chart-type 'barchart))
                        (urls (cond
                               ((string? acct)
                                other-anchor)
@@ -806,11 +875,16 @@
                                            (xaccAccountGetName acct)))))))))
                   (gnc:html-chart-add-data-series!
                    chart label amounts color
-                   'stack stack 'fill fill 'urls urls)))
+                   'stack stack 'fill fill 'urls urls 'pointRadius markers)))
               grouped-data
               (gnc:assign-colors (length grouped-data))
               (iota (length grouped-data)))
              ;; END (for-each ... )
+
+             ;; Tags: Additional chart options
+             (gnc:html-chart-set! chart '(options tooltips intersect) tooltip-intersect)
+             (gnc:html-chart-set! chart '(options tooltips axis) tooltip-axis)
+             (gnc:html-chart-set! chart '(options tooltips mode) tooltip-mode)
 
              (gnc:html-chart-set-stacking?! chart stacked?)
 
