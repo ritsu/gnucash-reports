@@ -79,6 +79,7 @@
 (define pagename-chart (N_ "Chart"))
 (define optname-markers (N_ "Line chart: Show data markers"))
 (define optname-fill (N_ "Line chart: Fill"))
+(define optname-fill-opacity (N_ "Fill opacity"))
 (define optname-tooltip-intersect (N_ "Tooltip intersect"))
 (define optname-tooltip-axis (N_ "Tooltip axis"))
 (define optname-tooltip-mode (N_ "Tooltip mode"))
@@ -178,15 +179,26 @@
       #f))
 
     (add-option
+     (gnc:make-number-range-option
+      pagename-chart optname-fill-opacity
+      "c" (N_ "Fill opacity (0 to 100)")
+      50   ;; default
+      0    ;; lower bound
+      100  ;; upper bound
+      0    ;; number of decimals
+      1    ;; step size
+      ))
+
+    (add-option
      (gnc:make-simple-boolean-option
       pagename-chart optname-tooltip-intersect
-      "c" (N_ "Display tooltip only when hovering over marker.")
+      "d" (N_ "Display tooltip only when hovering over marker.")
       #t))
 
     (add-option
      (gnc:make-multichoice-option
       pagename-chart optname-tooltip-axis
-      "d" (N_ "Tooltip axis") 'x
+      "e" (N_ "Tooltip axis") 'x
       (list (vector 'x
                     (N_ "x")
                     (N_ "x-axis"))
@@ -200,7 +212,7 @@
     (add-option
      (gnc:make-multichoice-option
       pagename-chart optname-tooltip-mode
-      "e" (N_ "Select which elements appear in tooltip.") 'point
+      "f" (N_ "Select which elements appear in tooltip.") 'point
       (list (vector 'point
                     (N_ "point")
                     (N_ "All utems at intersect point"))
@@ -383,6 +395,7 @@
          ;; Tags: Chart options
          (markers (if (get-option pagename-chart optname-markers) 3 0))
          (fill (get-option pagename-chart optname-fill))
+         (fill-opacity (get-option pagename-chart optname-fill-opacity))
          (tooltip-intersect (get-option pagename-chart optname-tooltip-intersect))
          (tooltip-axis (get-option pagename-chart optname-tooltip-axis))
          (tooltip-mode (get-option pagename-chart optname-tooltip-mode))
@@ -873,9 +886,48 @@
                                        (if show-fullname?
                                            (gnc-account-get-full-name acct)
                                            (xaccAccountGetName acct)))))))))
+
+                  ;; Tags: Convert color and alpha to rgba
+                  ;;       "#FF00A3" 0.5 -> "rgba(255, 0, 163, 0.5)"
+                  (define (char->hex-digit c)
+                    (cond ((char<=? #\0 c #\9)
+                           (- (char->integer c) (char->integer #\0)))
+                          ((char<=? #\A c #\F)
+                           (+ 10 (- (char->integer c) (char->integer #\A))))
+                          ((char<=? #\a c #\f)
+                           (+ 10 (- (char->integer c) (char->integer #\a))))))
+                  (define (color->hex-list color)
+                    (cond ((<= (string-length color) 2)
+                           (list (+
+                                   (* (char->hex-digit (car (string->list (substring color 0 2)))) 16)
+                                   (char->hex-digit (cadr (string->list (substring color 0 2)))))))
+                          ((equal? (substring color 0 1) "#")
+                           (color->hex-list (substring color 1 (string-length color))))
+                          (else
+                            (cons
+                              (+
+                                (* (char->hex-digit (car (string->list (substring color 0 2)))) 16)
+                                (char->hex-digit (cadr (string->list (substring color 0 2)))))
+                              (color->hex-list (substring color 2 (string-length color)))))))
+                  (define (color->rgba color a)
+                    (let ((rgb (color->hex-list color)))
+                      (string-append
+                        "rgba("
+                        (number->string (car rgb)) ", "
+                        (number->string (cadr rgb)) ", "
+                        (number->string (cadr (cdr rgb))) ", "
+                        (number->string a) ")")))
+
+                  ;; Tags: Apply transparency option to background
+                  ;;       This overrides default backgroundColor set in report/html-chart.scm:
+                  ;;         (cons 'backgroundColor (list-to-vec color))
                   (gnc:html-chart-add-data-series!
                    chart label amounts color
-                   'stack stack 'fill fill 'urls urls 'pointRadius markers)))
+                   'stack stack
+                   'fill fill
+                   'urls urls
+                   'backgroundColor (color->rgba color (/ fill-opacity 100.0))
+                   'pointRadius markers)))
               grouped-data
               (gnc:assign-colors (length grouped-data))
               (iota (length grouped-data)))
