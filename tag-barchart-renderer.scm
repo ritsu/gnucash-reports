@@ -182,7 +182,7 @@
      (gnc:make-number-range-option
       pagename-chart optname-fill-opacity
       "c" (N_ "Fill opacity (0 to 100)")
-      50   ;; default
+      80   ;; default
       0    ;; lower bound
       100  ;; upper bound
       0    ;; number of decimals
@@ -409,6 +409,7 @@
          (width (get-option gnc:pagename-display optname-plot-width))
          (sort-method (get-option gnc:pagename-display optname-sort-method))
 
+         ;; Tags: Tag tab options
          (group-by (get-option pagename-tags optname-group-by))
          (custom-sort (get-option pagename-tags optname-custom-sort))
          (use-parent? (get-option pagename-tags optname-use-parent))
