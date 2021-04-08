@@ -493,11 +493,10 @@
                ;; Here the date strings for the x-axis labels are
                ;; created.
                (other-anchor "")
-               (all-data '())
+               ; (all-data '())
                ;; Tags: placeholders
-               (grouped-accounts '())
+               (grouped-hash-table (make-hash-table))
                (grouped-data '())
-               (untagged-data '())
                (grouped-data-totals '())
                (grouped-data-normalized '()))
 
@@ -589,49 +588,8 @@
                   sum)
                 (length (filter show-acct? accts))))
 
-          ;; Calculates all account's balances. Returns a list of pairs:
-          ;; (<account> <balance-list>), like '((Earnings (10.0 11.2))
-          ;; (Gifts (12.3 14.5))), where each element of <balance-list>
-          ;; is the balance corresponding to one element in
-          ;; <dates-list>.
-          ;;
-          ;; If current-depth >= tree-depth, then the balances are
-          ;; calculated *with* subaccount's balances. Else only the
-          ;; current account is regarded. Note: All accounts in accts
-          ;; and all their subaccounts are processed, but a balances is
-          ;; calculated and returned *only* for those accounts where
-          ;; show-acct? is true. This is necessary because otherwise we
-          ;; would forget an account that is selected but not its
-          ;; parent.
-          (define (traverse-accounts current-depth accts)
-            (if (< current-depth tree-depth)
-                (let ((res '()))
-                  (for-each
-                   (lambda (a)
-                     (begin
-                       (set! work-done (1+ work-done))
-                       (gnc:report-percent-done (+ 20 (* 70 (/ work-done work-to-do))))
-                       (if (show-acct? a)
-                           (set! res
-                             (cons (list a (account->balance-list a #f))
-                                   res)))
-                       (set! res (append
-                                  (traverse-accounts
-                                   (1+ current-depth)
-                                   (gnc-account-get-children a))
-                                  res))))
-                   accts)
-                  res)
-                ;; else (i.e. current-depth == tree-depth)
-                (map
-                 (lambda (a)
-                   (set! work-done (1+ work-done))
-                   (gnc:report-percent-done (+ 20 (* 70 (/ work-done work-to-do))))
-                   (list a (account->balance-list a #t)))
-                 (filter show-acct? accts))))
-
           ;; Tags: Get value(s) for group-by tag from account
-          (define (account->tag-values acct orig-acct depth)
+          (define (account->tag-values acct depth)
             (let* ((res '()))
               (for-each (lambda (tag-pair)
                   (when (equal? (car tag-pair) (symbol->string group-by))
@@ -641,38 +599,51 @@
               ; TODO: detect when we are at root account
               ; FIXME: magic number
               (if (and (null? res) use-parent? (< depth 6))
-                (account->tag-values (gnc-account-get-parent acct) orig-acct (1+ depth))
+                (account->tag-values (gnc-account-get-parent acct) (1+ depth))
                 (begin
                   (when (and (null? res) display-untagged?)
                     (set! res (list "Untagged")))
-                  (for-each (lambda (r)
-                      (set! grouped-accounts (cons (list r orig-acct) grouped-accounts)))
-                    res)
                   res))))
 
-          ;; Tags: Get unique values for group-by tag from list of accounts
-          (define (data->tag-values all-data)
-            (let ((res '()))
-              (for-each (lambda (d)
-                  (set! res (append res (account->tag-values (car d) (car d) 0))))
-                all-data)
-              (delete-duplicates res)))
+          ;; Tags: Add data from account to hash table
+          ;; (tag-value: <balance-list> <account-list>)
+          (define (add-tagged-account! table account current-depth)
+            (for-each
+              (lambda (v)
+                (let* ((comm (xaccAccountGetCommodity account))
+                       (handle
+                         (hash-create-handle! table v (list '() (map
+                             (lambda (s) (gnc:make-gnc-monetary report-currency 0))
+                             dates-list))))
+                       (val (cdr handle)))
+                  (hash-set! table v (list
+                      (cons account (car val))
+                      (map gnc:monetary+ (account->balance-list account #f) (cadr val))))))
+              (account->tag-values account current-depth)))
 
-          ;; Tags: Create list of balances for each unique tag-value in all-data
-          (define (group-by-tag-value all-data)
-            (let ((res '()))
-              (for-each (lambda (v)
-                  (let* ((matched-data (filter
-                           ; TODO: define a precomputed list of (<account> <tag-values>)
-                           ; so we don't have to recalculate tag-values every time?
-                           (lambda (d) (member v (account->tag-values (car d) (car d) 0)))
-                           all-data))
-                         (value-sum (map
-                           (lambda (l) (apply gnc:monetary+ l))
-                           (apply zip (map cadr matched-data)))))
-                    (set! res (cons (list v value-sum) res))))
-                (data->tag-values all-data))
-            res))
+          ;; Tags: Similar to traverse-accounts, except balances are not
+          ;; calculated and stored for individual accounts. Instead, balances
+          ;; are added to a hash table grouped by tag values.
+          (define (traverse-accounts! table current-depth accts)
+            (for-each
+              (lambda (a)
+                (set! work-done (1+ work-done))
+                (gnc:report-percent-done (+ 20 (* 70 (/ work-done work-to-do))))
+                (if (show-acct? a)
+                  (add-tagged-account! table a current-depth))
+                (traverse-accounts!
+                  table
+                  (1+ current-depth)
+                  (gnc-account-get-children a)))
+              accts))
+
+          ;; Tags: Create grouped-data from grouped-hash-table
+          (define (hash-table->grouped-data table)
+            (hash-map->list (lambda (k v) (list k (cadr v))) table))
+
+          ;; Tags: Create grouped-accounts from grouped-hash-table
+          (define (hash-table->grouped-accounts table)
+            (hash-map->list (lambda (k v) (list k (car v))) table))
 
           ;; The percentage done numbers here are a hack so that
           ;; something gets displayed. On my system the
@@ -692,17 +663,14 @@
 
           (set! work-to-do (count-accounts 1 topl-accounts))
 
-          ;; Tags: Skip sorting because we sort in (set! grouped-data ... )
-          (set! all-data
-            (filter (lambda (l)
-                      (not (zero? (gnc:gnc-monetary-amount
-                                   (apply gnc:monetary+ (cadr l))))))
-                    (traverse-accounts 1 topl-accounts)))
-
           ;; Tags: Create grouped-data, sorted by user option
+          (traverse-accounts! grouped-hash-table 1 topl-accounts)
           (set! grouped-data
             (sort
-              (group-by-tag-value all-data)
+              (filter (lambda (l)
+                        (not (zero? (gnc:gnc-monetary-amount
+                                      (apply gnc:monetary+ (cadr l))))))
+                      (hash-table->grouped-data grouped-hash-table))
               (case sort-method
                 ((alphabetical)
                  (lambda (a b)
@@ -1003,28 +971,27 @@
              ;; In some cases this helps reduce clutter, in other cases it
              ;; may cause confusion. Consider changing behaviour...
              (when show-accounts?
-               (let ((groups (delete-duplicates (map car grouped-accounts)))
-                     (table (gnc:make-html-table)))
+               (let* ((grouped-accounts (hash-table->grouped-accounts grouped-hash-table))
+                      (groups (map car grouped-accounts))
+                      (table (gnc:make-html-table)))
                  (gnc:html-table-set-style!
                    table "th"
                    'attribute '("align" "left"))
                  (gnc:html-table-set-col-headers! table groups)
                  (gnc:html-table-append-row! table
                    (map (lambda (group)
-                       (apply
-                         string-append
-                         (sort (delete-duplicates
-                             (map (lambda (ga)
-                                 (string-append
-                                   (if show-fullname?
-                                     (gnc-account-get-full-name (cadr ga))
-                                     (xaccAccountGetName (cadr ga)))
-                                   "<br/>"))
-                                  (filter
-                                    (lambda (g) (equal? (car g) group))
-                                    grouped-accounts)))
-                             (lambda (a b)
-                               (gnc:string-locale<? a b)))))
+                     (apply
+                       string-append
+                       (sort
+                         (map (lambda (ga)
+                             (string-append
+                               (if show-fullname?
+                                 (gnc-account-get-full-name ga)
+                                 (xaccAccountGetName ga))
+                               "<br/>"))
+                              (cadr (assv group grouped-accounts)))
+                         (lambda (a b)
+                           (gnc:string-locale<? a b)))))
                      groups))
                  (gnc:html-document-add-object! document table)))
 
