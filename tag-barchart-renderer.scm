@@ -607,7 +607,7 @@
 
           ;; Tags: Add data from account to hash table
           ;; (tag-value: <balance-list> <account-list>)
-          (define (add-tagged-account! table account current-depth)
+          (define (add-tagged-account! table account)
             (for-each
               (lambda (v)
                 (let* ((comm (xaccAccountGetCommodity account))
@@ -622,22 +622,19 @@
                         (cons account (car val))
                         (car val))
                       (map gnc:monetary+ balance-list (cadr val))))))
-              (account->tag-values account current-depth)))
+              (account->tag-values account 0)))
 
           ;; Tags: Similar to traverse-accounts, except balances are not
           ;; calculated and stored for individual accounts. Instead, balances
           ;; are added to a hash table grouped by tag values.
-          (define (traverse-accounts! table current-depth accts)
+          (define (traverse-accounts! table accts)
             (for-each
               (lambda (a)
                 (set! work-done (1+ work-done))
                 (gnc:report-percent-done (+ 20 (* 70 (/ work-done work-to-do))))
                 (if (show-acct? a)
-                  (add-tagged-account! table a current-depth))
-                (traverse-accounts!
-                  table
-                  (1+ current-depth)
-                  (gnc-account-get-children a)))
+                  (add-tagged-account! table a))
+                (traverse-accounts! table (gnc-account-get-children a)))
               accts))
 
           ;; Tags: Create grouped-data from grouped-hash-table
@@ -667,7 +664,7 @@
           (set! work-to-do (count-accounts 1 topl-accounts))
 
           ;; Tags: Populate grouped-hash-table
-          (traverse-accounts! grouped-hash-table 1 topl-accounts)
+          (traverse-accounts! grouped-hash-table topl-accounts)
 
           ;; Tags: Remove Untagged group if it has no accounts
           (when
