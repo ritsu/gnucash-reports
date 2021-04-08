@@ -611,14 +611,17 @@
             (for-each
               (lambda (v)
                 (let* ((comm (xaccAccountGetCommodity account))
+                       (balance-list (account->balance-list account #f))
                        (handle
                          (hash-create-handle! table v (list '() (map
                              (lambda (s) (gnc:make-gnc-monetary report-currency 0))
                              dates-list))))
                        (val (cdr handle)))
                   (hash-set! table v (list
-                      (cons account (car val))
-                      (map gnc:monetary+ (account->balance-list account #f) (cadr val))))))
+                      (if (not-all-zeros balance-list)
+                        (cons account (car val))
+                        (car val))
+                      (map gnc:monetary+ balance-list (cadr val))))))
               (account->tag-values account current-depth)))
 
           ;; Tags: Similar to traverse-accounts, except balances are not
@@ -663,8 +666,15 @@
 
           (set! work-to-do (count-accounts 1 topl-accounts))
 
-          ;; Tags: Create grouped-data, sorted by user option
+          ;; Tags: Populate grouped-hash-table
           (traverse-accounts! grouped-hash-table 1 topl-accounts)
+
+          ;; Tags: Remove Untagged group if it has no accounts
+          (when
+            (and (hash-get-handle grouped-hash-table "Untagged")
+                 (null? (cadr (hash-get-handle grouped-hash-table "Untagged"))))
+            (hash-remove! grouped-hash-table "Untagged"))
+
           (set! grouped-data
             (sort
               (filter (lambda (l)
@@ -704,7 +714,7 @@
           ;;       will (should?) always be the same
           (if
            (and (not (null? grouped-data))
-                (not-all-zeros  (map cadr grouped-data)))
+                (not-all-zeros (map cadr grouped-data)))
 
            (let* ((dates-list (if do-intervals?
                                   (list-head dates-list (1- (length dates-list)))
@@ -966,10 +976,6 @@
              ;; END (when ... )
 
              ;; Tags: Show which accounts contributed to which tag-values
-             ;; TODO: Currently, if multiple accounts have the same name,
-             ;; the name only appears once under any given tag-value.
-             ;; In some cases this helps reduce clutter, in other cases it
-             ;; may cause confusion. Consider changing behaviour...
              (when show-accounts?
                (let* ((grouped-accounts (hash-table->grouped-accounts grouped-hash-table))
                       (groups (map car grouped-accounts))
