@@ -8,33 +8,11 @@
 ;;       type: equity, cap: large, style: growth, dom: intl
 ;;   - Each generated report is associated with a tag-key, and
 ;;     balances are grouped by tag-values.
-;;   - The following options have been added to the Tag tab:
-;;       Group by (multi-choice):
-;;         Choose from tag keys found in existing account notes
-;;       Use parent tags as fallback (boolean):
-;;         If an account does not have the group-by tag defined
-;;         use the tag from the nearest parent that has it
-;;       Display untagged balances (boolean):
-;;         Display balances that are not assigned to any tag value
-;;       Normalize balances for each interval (boolean):
-;;         Display data as percentages, with balances from each
-;;         period always adding up to 100%.
-;;       Display table of accounts by tag (boolean):
-;;         Display table showing which accounts contributed to
-;;         which tag values.
 ;;
 ;; Note:
 ;;   - If an account has multiple values for the same tag,
 ;;     the current behaviour is to count the balance for the
 ;;     account multiple times, once for each tag value.
-;;   - Consdering changing the above behaviour so accounts
-;;     are only counted once. Q: For first tag value seen,
-;;     or first tag value alphabetically?
-;;
-;; TODO:
-;;   - Refactor: There are probably a lot of unnecessary
-;;     loops and data structures that can be trimmed down.
-;;   - Additional TODO items in code comments
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -491,7 +469,7 @@
                             (gnc:time64-end-day-time to-date-t64)
                             (gnc:deltasym-to-delta interval)))
                ;; Tags: Default balance-list when adding a new tag-value to grouped-hash-table
-               (dates-list-zeros
+               (balance-list-zeros
                  (map (lambda (s) (gnc:make-gnc-monetary report-currency 0))
                       dates-list))
                ;; Here the date strings for the x-axis labels are
@@ -501,7 +479,6 @@
                ;; Tags: placeholders
                (grouped-hash-table (make-hash-table))
                (grouped-data '())
-               (grouped-data-totals '())
                (grouped-data-normalized '()))
 
           ;; Converts a commodity-collector into gnc-monetary in the report's
@@ -615,7 +592,7 @@
             (let ((balance-list (account->balance-list account #f)))
               (for-each
                 (lambda (v)
-                  (let* ((handle (hash-create-handle! table v (list '() dates-list-zeros)))
+                  (let* ((handle (hash-create-handle! table v (list '() balance-list-zeros)))
                          (val (cdr handle)))
                     (hash-set! table v
                                (list (if (not-all-zeros balance-list)
@@ -707,8 +684,6 @@
 
           ;; Proceed if the data is non-zeros
           ;; Tags: Replaced all-data with grouped-data
-          ;;       Probably does not make a difference, since conditionals for both
-          ;;       will (should?) always be the same
           (if
            (and (not (null? grouped-data))
                 (not-all-zeros (map cadr grouped-data)))
@@ -816,8 +791,7 @@
                   (set! grouped-data (map (lambda (d) (list (car d) (cdr d)))
                        (apply zip norm-data)))))
 
-             ;; Tags: Replaced all-data with grouped-data in this (for-each) block
-             ;;       See iterable arguments to (lambda ())
+             ;; Tags: Replaced all-data with grouped-data in iterables supplied to (lambda ())
              (for-each
               (lambda (series color stack)
                 (let* ((acct (car series))
