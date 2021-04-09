@@ -278,8 +278,7 @@ balance at a given time"))
 ;; account-types to work on and whether this report works on
 ;; intervals as arguments.
 (define (tag-piechart-renderer report-obj reportname report-guid
-                               account-types do-intervals?
-                               display-name sort-comparator get-data)
+                               account-types do-intervals?)
 
   ;; This is a helper function for looking up option values.
   (define (get-option section name)
@@ -500,10 +499,6 @@ balance at a given time"))
                (zero? (caddr (hash-get-handle grouped-hash-table "Untagged"))))
           (hash-remove! grouped-hash-table "Untagged"))
 
-        (display "\n\ngrouped-data:\n")
-        (display (hash-table->grouped-data grouped-hash-table))
-        (display "\n\ngrouped-accounts:\n")
-        (display (hash-table->grouped-accounts grouped-hash-table))
         ;; Tags: Create grouped-data, sorted by user option
         (set! grouped-data
           (sort
@@ -633,9 +628,7 @@ balance at a given time"))
               (map
                 (lambda (series)
                   (string-append
-                    (if (string? (cadr series))
-                      (cadr series)
-                      (display-name show-fullname? (cadr series)))
+                    (cadr series)
                     (if show-total?
                       (string-append
                         " - "

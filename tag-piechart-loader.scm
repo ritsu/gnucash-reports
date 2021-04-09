@@ -61,32 +61,11 @@
 
 ; Every time report is rendered, reload the meat of the report
 (define (piechart-renderer report-obj reportname report-guid
-                           account-types do-intervals?
-                           display-name sort-comparator get-data)
+                           account-types do-intervals?)
   (reload-report-module)
   (tag-piechart-renderer report-obj reportname report-guid
-                           account-types do-intervals?
-                           display-name sort-comparator get-data))
+                           account-types do-intervals?))
 
-;; Get display name for account-based reports.
-(define (display-name-accounts show-fullname? acc)
-  ((if show-fullname?
-       gnc-account-get-full-name
-       xaccAccountGetName) acc))
-
-;; Sort comparator for account-based reports.
-(define (sort-comparator-accounts sort-method show-fullname?)
-  (cond
-   ((eq? sort-method 'acct-code)
-    (lambda (a b)
-      (gnc:string-locale<? (xaccAccountGetCode (cadr a))
-                           (xaccAccountGetCode (cadr b)))))
-   ((eq? sort-method 'alphabetical)
-    (lambda (a b)
-      (gnc:string-locale<? (display-name-accounts show-fullname? (cadr a))
-                           (display-name-accounts show-fullname? (cadr b)))))
-   (else
-    (lambda (a b) (> (car a) (car b))))))
 
 (define (build-report!
           name acct-types income-expense? menuname menutip
@@ -105,43 +84,7 @@
                                                      income-expense?))
     'renderer (lambda (report-obj)
                 (piechart-renderer report-obj name uuid
-                                   acct-types income-expense?
-                                   display-name-accounts
-                                   sort-comparator-accounts
-                                   traverse-accounts))))
-
-;; Tags: Similar to traverse-accounts, except balances are not
-;; calculated and stored for individual accounts. Instead, balances
-;; are added to a hash table grouped by tag values.
-(define (traverse-accounts account-balance show-acct? work-to-do
-                           work-done current-depth accts)
-  (define table (make-hash-table))
-  (define (add-tagged-account! account balance)
-    (for-each
-      (lambda (v)
-        (let* ((handle (hash-create-handle! table v (list '() 0)))
-               (val (cdr handle)))
-          (hash-set! table v
-                     (list (cons account (car val))
-                           (+ (cadr val) balance)))))
-      (account->tag-values account 0)))
-
-  (define (traverse! remaining initial-work)
-    (if (null? remaining)
-      initial-work
-      (let* ((cur (car remaining))
-             (tail (cdr remaining))
-             (cur-work-done (1+ initial-work))
-             (subaccts (gnc-account-get-children cur)))
-        (gnc:report-percent-done (* 100 (/ cur-work-done (work-to-do))))
-        (if (show-acct? cur)
-          (let ((balance (account-balance account #f)))
-            (if (not (zero? balance))
-              (add-tagged-account! cur balance))))
-        (traverse! tail (traverse! subaccts cur-work-done)))))
-
-  (let ((final-work (traverse! accts work-done)))
-    (cons final-work (table))))
+                                   acct-types income-expense?))))
 
 (build-report!
   reportname-income
