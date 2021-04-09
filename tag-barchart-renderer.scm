@@ -490,6 +490,10 @@
                                  gnc:time64-end-day-time) from-date-t64)
                             (gnc:time64-end-day-time to-date-t64)
                             (gnc:deltasym-to-delta interval)))
+               ;; Tags: Default balance-list when adding a new tag-value to grouped-hash-table
+               (dates-list-zeros
+                 (map (lambda (s) (gnc:make-gnc-monetary report-currency 0))
+                      dates-list))
                ;; Here the date strings for the x-axis labels are
                ;; created.
                (other-anchor "")
@@ -608,21 +612,17 @@
           ;; Tags: Add data from account to hash table
           ;; (tag-value: <balance-list> <account-list>)
           (define (add-tagged-account! table account)
-            (for-each
-              (lambda (v)
-                (let* ((comm (xaccAccountGetCommodity account))
-                       (balance-list (account->balance-list account #f))
-                       (handle
-                         (hash-create-handle! table v (list '() (map
-                             (lambda (s) (gnc:make-gnc-monetary report-currency 0))
-                             dates-list))))
-                       (val (cdr handle)))
-                  (hash-set! table v (list
-                      (if (not-all-zeros balance-list)
-                        (cons account (car val))
-                        (car val))
-                      (map gnc:monetary+ balance-list (cadr val))))))
-              (account->tag-values account 0)))
+            (let ((balance-list (account->balance-list account #f)))
+              (for-each
+                (lambda (v)
+                  (let* ((handle (hash-create-handle! table v (list '() dates-list-zeros)))
+                         (val (cdr handle)))
+                    (hash-set! table v
+                               (list (if (not-all-zeros balance-list)
+                                       (cons account (car val))
+                                       (car val))
+                                     (map gnc:monetary+ balance-list (cadr val))))))
+                (account->tag-values account 0))))
 
           ;; Tags: Similar to traverse-accounts, except balances are not
           ;; calculated and stored for individual accounts. Instead, balances
