@@ -430,7 +430,6 @@
 
         ;; Define more helper variables.
         (let* ((commodity-list #f)
-               (report-title (string-append report-title " [" (symbol->string group-by) "]"))
                (exchange-fn #f)
                (averaging-fraction-func (gnc:date-get-fraction-func averaging-selection))
                (interval-fraction-func (gnc:date-get-fraction-func interval))
