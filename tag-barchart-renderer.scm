@@ -475,11 +475,9 @@
                ;; Here the date strings for the x-axis labels are
                ;; created.
                (other-anchor "")
-               ; (all-data '())
                ;; Tags: placeholders
                (grouped-hash-table (make-hash-table))
-               (grouped-data '())
-               (grouped-data-normalized '()))
+               (grouped-data '()))
 
           ;; Converts a commodity-collector into gnc-monetary in the report's
           ;; currency using the exchange-fn calculated above. Returns a gnc-monetary
@@ -865,7 +863,7 @@
                         "rgba("
                         (number->string (car rgb)) ", "
                         (number->string (cadr rgb)) ", "
-                        (number->string (cadr (cdr rgb))) ", "
+                        (number->string (caddr rgb)) ", "
                         (number->string a) ")")))
 
                   ;; Tags: Apply transparency option to background
